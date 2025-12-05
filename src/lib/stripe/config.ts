@@ -1,6 +1,6 @@
 export const STRIPE_PLANS = {
   starter: {
-    name: "Starter",
+    name: "AI BASIC",
     price: 29,
     priceId: process.env.STRIPE_STARTER_PRICE_ID!,
     features: [
@@ -16,7 +16,7 @@ export const STRIPE_PLANS = {
     },
   },
   pro: {
-    name: "Pro",
+    name: "POTRZEBNY PRO",
     price: 49,
     priceId: process.env.STRIPE_PRO_PRICE_ID!,
     features: [
@@ -33,12 +33,12 @@ export const STRIPE_PLANS = {
     },
   },
   team: {
-    name: "Team",
+    name: "SUPERMÓZG ULTRA",
     price: 79,
     priceId: process.env.STRIPE_TEAM_PRICE_ID!,
     features: [
       "Nielimitowana transkrypcja",
-      "Wszystko z Pro",
+      "Wszystko z POTRZEBNY PRO",
       "Panel nauczyciela",
       "Udostępnianie materiałów",
       "Analityka postępów",
