@@ -16,7 +16,7 @@ interface PricingPlan {
 
 const plans: PricingPlan[] = [
   {
-    name: "Starter",
+    name: "AI BASIC",
     price: 29,
     description: "Dla osób rozpoczynających przygodę z AI",
     features: [
@@ -26,10 +26,10 @@ const plans: PricingPlan[] = [
       "1 tryb dostępności",
       "Email support",
     ],
-    cta: "Wybierz Starter",
+    cta: "Wybierz AI BASIC",
   },
   {
-    name: "Pro",
+    name: "POTRZEBNY PRO",
     price: 49,
     description: "Dla aktywnych studentów i profesjonalistów",
     features: [
@@ -41,22 +41,22 @@ const plans: PricingPlan[] = [
       "Priorytetowy support",
     ],
     popular: true,
-    cta: "Wybierz Pro",
+    cta: "Wybierz POTRZEBNY PRO",
   },
   {
-    name: "Team",
+    name: "SUPERMÓZG ULTRA",
     price: 79,
     description: "Dla zespołów i organizacji",
     features: [
       "Nielimitowana transkrypcja",
-      "Wszystko z Pro",
+      "Wszystko z POTRZEBNY PRO",
       "Panel nauczyciela",
       "Udostępnianie materiałów",
       "Analityka postępów",
       "API access",
       "Dedykowany opiekun",
     ],
-    cta: "Wybierz Team",
+    cta: "Wybierz SUPERMÓZG ULTRA",
   },
 ];
 
