@@ -37,6 +37,21 @@ export default async function DashboardPage() {
     .select("*", { count: "exact", head: true })
     .eq("student_id", user!.id);
 
+  // Calculate total study hours from audio duration
+  const { data: materialsWithDuration } = await supabase
+    .from("materials")
+    .select("audio_duration")
+    .not("audio_duration", "is", null);
+
+  const totalSeconds = materialsWithDuration?.reduce(
+    (sum, m) => sum + (m.audio_duration || 0),
+    0
+  ) || 0;
+  const totalHours = totalSeconds / 3600;
+  const studyHoursDisplay = totalHours < 1
+    ? `${Math.round(totalSeconds / 60)}min`
+    : `${totalHours.toFixed(1)}h`;
+
   const stats = [
     {
       label: "Materiały",
@@ -54,7 +69,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Godziny nauki",
-      value: "0",
+      value: studyHoursDisplay,
       icon: Clock,
       color: "text-green-500",
       bg: "bg-green-500/10",
