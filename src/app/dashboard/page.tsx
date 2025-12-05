@@ -37,6 +37,23 @@ export default async function DashboardPage() {
     .select("*", { count: "exact", head: true })
     .eq("student_id", user!.id);
 
+  // Calculate weekly progress from quiz attempts in the last 7 days
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  const { data: weeklyAttempts } = await supabase
+    .from("quiz_attempts")
+    .select("score, max_score")
+    .eq("student_id", user!.id)
+    .gte("created_at", oneWeekAgo.toISOString());
+
+  let weeklyProgress = 0;
+  if (weeklyAttempts && weeklyAttempts.length > 0) {
+    const totalScore = weeklyAttempts.reduce((sum, attempt) => sum + attempt.score, 0);
+    const totalMaxScore = weeklyAttempts.reduce((sum, attempt) => sum + attempt.max_score, 0);
+    weeklyProgress = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
+  }
+
   const stats = [
     {
       label: "Materiały",
@@ -61,7 +78,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Postęp tygodnia",
-      value: "0%",
+      value: `${weeklyProgress}%`,
       icon: TrendingUp,
       color: "text-orange-500",
       bg: "bg-orange-500/10",
