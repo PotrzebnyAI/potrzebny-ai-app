@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
+import { ChatWrapper } from "@/components/chat/ChatWrapper";
+import { OnboardingWrapper } from "@/components/onboarding/OnboardingWrapper";
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +28,8 @@ export default async function DashboardLayout({
       <main className="lg:pl-64">
         <div className="p-6 lg:p-8">{children}</div>
       </main>
+      <ChatWrapper />
+      <OnboardingWrapper />
     </div>
   );
 }
