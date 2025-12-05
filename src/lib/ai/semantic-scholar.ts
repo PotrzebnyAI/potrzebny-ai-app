@@ -3,7 +3,7 @@
 
 const SEMANTIC_SCHOLAR_API = "https://api.semanticscholar.org/graph/v1";
 
-interface Paper {
+export interface Paper {
   paperId: string;
   title: string;
   abstract?: string;
@@ -13,6 +13,8 @@ interface Paper {
   url?: string;
   venue?: string;
   openAccessPdf?: { url: string };
+  citations?: Paper[];
+  references?: Paper[];
 }
 
 interface SearchResponse {
@@ -28,8 +30,9 @@ export async function searchPapers(
     offset?: number;
     year?: string;
     fieldsOfStudy?: string[];
+    fields?: string[];
   }
-): Promise<SearchResponse> {
+): Promise<Paper[]> {
   const params = new URLSearchParams({
     query,
     limit: String(options?.limit || 10),
@@ -58,13 +61,20 @@ export async function searchPapers(
     throw new Error(`Semantic Scholar error: ${response.statusText}`);
   }
 
-  return response.json();
+  const data: SearchResponse = await response.json();
+  return data.data || [];
 }
 
 // Pobierz szczegóły publikacji
-export async function getPaper(paperId: string): Promise<Paper> {
+export async function getPaper(
+  paperId: string,
+  options?: {
+    fields?: string[];
+  }
+): Promise<Paper> {
+  const fields = options?.fields?.join(",") || "paperId,title,abstract,year,citationCount,authors,url,venue,openAccessPdf,references,citations";
   const response = await fetch(
-    `${SEMANTIC_SCHOLAR_API}/paper/${paperId}?fields=paperId,title,abstract,year,citationCount,authors,url,venue,openAccessPdf,references,citations`,
+    `${SEMANTIC_SCHOLAR_API}/paper/${paperId}?fields=${fields}`,
     {
       headers: {
         "x-api-key": process.env.SEMANTIC_SCHOLAR_API_KEY || "",
@@ -82,8 +92,9 @@ export async function getPaper(paperId: string): Promise<Paper> {
 // Pobierz rekomendacje na podstawie publikacji
 export async function getRecommendations(
   paperId: string,
-  limit: number = 10
+  options?: { limit?: number }
 ): Promise<Paper[]> {
+  const limit = options?.limit || 10;
   const response = await fetch(
     `${SEMANTIC_SCHOLAR_API}/recommendations/v1/papers/forpaper/${paperId}?limit=${limit}&fields=paperId,title,abstract,year,citationCount,authors,url`,
     {
