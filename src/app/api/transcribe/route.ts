@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { transcribeAudio, generateJSON } from "@/lib/ai";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,29 +32,12 @@ export async function POST(request: Request) {
       throw new Error("No audio URL found");
     }
 
-    // Call OpenAI Whisper API for transcription
+    // Fetch audio file
     const audioResponse = await fetch(material.audio_url);
     const audioBlob = await audioResponse.blob();
 
-    const formData = new FormData();
-    formData.append("file", audioBlob, "audio.mp3");
-    formData.append("model", "whisper-1");
-    formData.append("language", "pl");
-
-    const transcriptionResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: formData,
-    });
-
-    if (!transcriptionResponse.ok) {
-      throw new Error("Transcription failed");
-    }
-
-    const transcriptionData = await transcriptionResponse.json();
-    const transcriptionText = transcriptionData.text;
+    // Transkrypcja z Groq Whisper (DARMOWE)
+    const transcriptionText = await transcribeAudio(audioBlob, "pl");
 
     // Save transcription
     await supabaseAdmin.from("transcriptions").insert({
@@ -63,7 +47,7 @@ export async function POST(request: Request) {
       word_count: transcriptionText.split(/\s+/).length,
     });
 
-    // Generate notes, quiz, and flashcards using GPT-4
+    // Generate notes, quiz, and flashcards using Groq Llama (DARMOWE)
     const [notes, quiz, flashcards] = await Promise.all([
       generateNotes(transcriptionText, "standard"),
       generateQuiz(transcriptionText),
@@ -100,13 +84,15 @@ export async function POST(request: Request) {
     console.error("Transcription error:", error);
 
     // Update status to failed
-    const { materialId } = await request.json().catch(() => ({}));
-    if (materialId) {
-      await supabaseAdmin
-        .from("materials")
-        .update({ status: "failed" })
-        .eq("id", materialId);
-    }
+    try {
+      const body = await request.clone().json();
+      if (body.materialId) {
+        await supabaseAdmin
+          .from("materials")
+          .update({ status: "failed" })
+          .eq("id", body.materialId);
+      }
+    } catch {}
 
     return NextResponse.json({ error: "Transcription failed" }, { status: 500 });
   }
@@ -121,73 +107,40 @@ async function generateNotes(transcription: string, mode: string) {
     auditory: "Stwórz notatki w formie dialogu i opowieści, z mnemotechnikami.",
   };
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `Jesteś ekspertem od tworzenia materiałów edukacyjnych. ${modePrompts[mode]} Zwróć JSON z polami: title, summary, sections (array z title i content), keyPoints (array).`,
-        },
-        { role: "user", content: transcription.slice(0, 15000) },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
+  return generateJSON<{
+    title: string;
+    summary: string;
+    sections: Array<{ title: string; content: string }>;
+    keyPoints: string[];
+  }>(
+    `Jesteś ekspertem od tworzenia materiałów edukacyjnych. ${modePrompts[mode]} Zwróć JSON z polami: title, summary, sections (array z title i content), keyPoints (array).`,
+    transcription
+  );
 }
 
 async function generateQuiz(transcription: string) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "Stwórz quiz sprawdzający wiedzę z transkrypcji. Zwróć JSON z polem questions (array obiektów z: question, options (array 4 opcji), correctAnswer (index 0-3), explanation).",
-        },
-        { role: "user", content: transcription.slice(0, 15000) },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
+  const result = await generateJSON<{
+    questions: Array<{
+      question: string;
+      options: string[];
+      correctAnswer: number;
+      explanation: string;
+    }>;
+  }>(
+    "Stwórz quiz sprawdzający wiedzę z transkrypcji. Zwróć JSON z polem questions (array obiektów z: question, options (array 4 opcji), correctAnswer (index 0-3), explanation).",
+    transcription
+  );
 
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content).questions;
+  return result.questions;
 }
 
 async function generateFlashcards(transcription: string) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "Stwórz fiszki do nauki z transkrypcji. Zwróć JSON z polem cards (array obiektów z: front (pytanie/pojęcie), back (odpowiedź/definicja)).",
-        },
-        { role: "user", content: transcription.slice(0, 15000) },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
+  const result = await generateJSON<{
+    cards: Array<{ front: string; back: string }>;
+  }>(
+    "Stwórz fiszki do nauki z transkrypcji. Zwróć JSON z polem cards (array obiektów z: front (pytanie/pojęcie), back (odpowiedź/definicja)).",
+    transcription
+  );
 
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content).cards;
+  return result.cards;
 }
