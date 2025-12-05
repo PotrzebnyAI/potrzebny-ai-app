@@ -20,6 +20,11 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   "/api/ai/tts": { windowMs: 60000, maxRequests: 10 }, // 10/min
   "/api/ai/presentation": { windowMs: 60000, maxRequests: 10 }, // 10/min
   "/api/ai/research": { windowMs: 60000, maxRequests: 60 }, // 60/min
+  "/api/ai/video": { windowMs: 60000, maxRequests: 3 }, // 3/min (resource intensive)
+  "/api/ai/flashcards": { windowMs: 60000, maxRequests: 20 }, // 20/min
+  "/api/ai/quiz": { windowMs: 60000, maxRequests: 15 }, // 15/min
+  "/api/ai/notes": { windowMs: 60000, maxRequests: 20 }, // 20/min
+  "/api/ai/classroom": { windowMs: 60000, maxRequests: 30 }, // 30/min
   default: { windowMs: 60000, maxRequests: 100 }, // 100/min
 };
 

@@ -100,3 +100,25 @@ export async function generateJSON<T>(
 
   return JSON.parse(content);
 }
+
+// Prosty helper do generowania tekstu z promptu (bez tablicy wiadomości)
+export async function generateFromPrompt(
+  prompt: string,
+  options?: {
+    maxTokens?: number;
+    temperature?: number;
+    systemPrompt?: string;
+  }
+): Promise<string> {
+  const messages: GroqMessage[] = options?.systemPrompt
+    ? [
+        { role: "system", content: options.systemPrompt },
+        { role: "user", content: prompt },
+      ]
+    : [{ role: "user", content: prompt }];
+
+  return generateText(messages, {
+    max_tokens: options?.maxTokens,
+    temperature: options?.temperature,
+  });
+}
