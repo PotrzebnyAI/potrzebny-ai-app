@@ -54,6 +54,20 @@ export default async function DashboardPage() {
     weeklyProgress = totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
   }
 
+  // Calculate learning hours from transcription word counts
+  // Average reading/learning speed: ~150 words per minute
+  const { data: transcriptions } = await supabase
+    .from("transcriptions")
+    .select("word_count, material_id, materials!inner(teacher_id)")
+    .eq("materials.teacher_id", user!.id);
+
+  let learningHours = 0;
+  if (transcriptions && transcriptions.length > 0) {
+    const totalWords = transcriptions.reduce((sum, t) => sum + (t.word_count || 0), 0);
+    const minutes = totalWords / 150;
+    learningHours = Math.round(minutes / 60 * 10) / 10; // Round to 1 decimal
+  }
+
   const stats = [
     {
       label: "Materiały",
@@ -71,7 +85,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Godziny nauki",
-      value: "0",
+      value: learningHours,
       icon: Clock,
       color: "text-green-500",
       bg: "bg-green-500/10",
