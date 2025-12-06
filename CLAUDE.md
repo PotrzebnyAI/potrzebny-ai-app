@@ -54,6 +54,7 @@ npm run lint     # Sprawdź kod ESLint
 │   │   │   └── /[id]        # Szczegóły materiału
 │   │   ├── /learn           # Przeglądarka materiałów
 │   │   │   └── /[id]        # Widok nauki
+│   │   │       ├── /transcription # Transkrypcja tekstu
 │   │   │       ├── /notes       # Notatki
 │   │   │       ├── /quiz        # Quiz
 │   │   │       └── /flashcards  # Fiszki
@@ -72,7 +73,15 @@ npm run lint     # Sprawdź kod ESLint
 │   ├── /dashboard           # Komponenty dashboardu
 │   │   └── DashboardNav.tsx # Nawigacja boczna
 │   └── /ui                  # Komponenty UI
-│       └── button.tsx       # Przycisk (warianty)
+│       ├── index.ts         # Eksporty wszystkich komponentów
+│       ├── button.tsx       # Przycisk (warianty)
+│       ├── card.tsx         # Karty z nagłówkiem i treścią
+│       ├── input.tsx        # Pole tekstowe
+│       ├── textarea.tsx     # Pole wieloliniowe
+│       ├── badge.tsx        # Etykiety statusów
+│       ├── avatar.tsx       # Awatar użytkownika
+│       ├── skeleton.tsx     # Loading state
+│       └── transcription-actions.tsx # Kopiowanie/pobieranie
 │
 ├── /lib                     # Biblioteki i konfiguracje
 │   ├── /supabase            # Klienty Supabase
@@ -387,28 +396,59 @@ export async function POST(request: NextRequest) {
 }
 ```
 
+### Użycie Komponentów UI
+
+```typescript
+// Import z głównego pliku index - zalecany sposób
+import { Button, Card, CardHeader, CardContent, Input, Badge } from '@/components/ui';
+
+// Lub import pojedynczego komponentu
+import { Button } from '@/components/ui/button';
+```
+
+**Dostępne komponenty:**
+
+| Komponent | Opis | Warianty/Props |
+|-----------|------|----------------|
+| `Button` | Przycisk | primary, secondary, outline, ghost |
+| `Card` | Karta | CardHeader, CardTitle, CardContent, CardFooter |
+| `Input` | Pole tekstowe | label, error |
+| `Textarea` | Pole wieloliniowe | label, error |
+| `Badge` | Etykieta statusu | success, warning, error, info |
+| `Avatar` | Awatar | src, fallback, size (sm/md/lg) |
+| `Skeleton` | Loading state | SkeletonCard, SkeletonList, SkeletonText |
+
+**Przykład użycia Badge ze statusami:**
+
+```typescript
+import { Badge, materialStatusBadge } from '@/components/ui';
+
+// Użycie predefiniowanych statusów
+const status = materialStatusBadge['completed']; // { label: "Gotowy", variant: "success" }
+<Badge variant={status.variant}>{status.label}</Badge>
+```
+
 ### Dodanie Nowego Komponentu UI
 
 ```typescript
-// src/components/ui/card.tsx
+// src/components/ui/nowy-komponent.tsx
 import { cn } from '@/lib/utils';
 
-interface CardProps {
+interface NowyKomponentProps {
   children: React.ReactNode;
   className?: string;
 }
 
-export function Card({ children, className }: CardProps) {
+export function NowyKomponent({ children, className }: NowyKomponentProps) {
   return (
-    <div className={cn(
-      "bg-white rounded-lg shadow-md p-6",
-      "dark:bg-gray-800",
-      className
-    )}>
+    <div className={cn("bg-[var(--background)] rounded-xl p-6", className)}>
       {children}
     </div>
   );
 }
+
+// Dodaj eksport w src/components/ui/index.ts
+// export { NowyKomponent } from './nowy-komponent';
 ```
 
 ## Zmienne Środowiskowe
@@ -496,8 +536,10 @@ STRIPE_TEAM_PRICE_ID=price_...
 | Pipeline transkrypcji | `/src/app/api/transcribe/route.ts` |
 | Webhook Stripe | `/src/app/api/stripe/webhook/route.ts` |
 | Style globalne | `/src/app/globals.css` |
+| Komponenty UI (index) | `/src/components/ui/index.ts` |
 | Komponent Button | `/src/components/ui/button.tsx` |
 | Nawigacja dashboard | `/src/components/dashboard/DashboardNav.tsx` |
+| Strona transkrypcji | `/src/app/dashboard/learn/[id]/transcription/page.tsx` |
 
 ## Rozwój Projektu - Planowane Funkcje
 
