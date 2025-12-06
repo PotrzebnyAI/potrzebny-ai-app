@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ interface Card {
 
 export default function FlashcardsPage() {
   const params = useParams();
+  const router = useRouter();
   const supabase = createClient();
   const id = params.id as string;
 
@@ -26,6 +27,25 @@ export default function FlashcardsPage() {
 
   useEffect(() => {
     async function loadFlashcards() {
+      // Verify user owns the material first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth/login");
+        return;
+      }
+
+      const { data: material } = await supabase
+        .from("materials")
+        .select("id")
+        .eq("id", id)
+        .eq("teacher_id", user.id)
+        .single();
+
+      if (!material) {
+        router.push("/dashboard");
+        return;
+      }
+
       const { data } = await supabase
         .from("flashcard_decks")
         .select("*")
@@ -43,7 +63,7 @@ export default function FlashcardsPage() {
       setLoading(false);
     }
     loadFlashcards();
-  }, [id, supabase]);
+  }, [id, supabase, router]);
 
   const handleFlip = () => setFlipped(!flipped);
 

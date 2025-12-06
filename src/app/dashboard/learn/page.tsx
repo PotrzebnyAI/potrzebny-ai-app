@@ -9,6 +9,7 @@ export default async function LearnPage() {
   const { data: materials } = await supabase
     .from("materials")
     .select("*")
+    .eq("teacher_id", user!.id)
     .eq("status", "completed")
     .order("created_at", { ascending: false });
 

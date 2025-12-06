@@ -13,11 +13,13 @@ interface NotesContent {
 export default async function NotesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { data: material } = await supabase
     .from("materials")
     .select("*")
     .eq("id", id)
+    .eq("teacher_id", user!.id)
     .single();
 
   if (!material) notFound();

@@ -31,6 +31,25 @@ export default function QuizPage() {
 
   useEffect(() => {
     async function loadQuiz() {
+      // Verify user owns the material first
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth/login");
+        return;
+      }
+
+      const { data: material } = await supabase
+        .from("materials")
+        .select("id")
+        .eq("id", id)
+        .eq("teacher_id", user.id)
+        .single();
+
+      if (!material) {
+        router.push("/dashboard");
+        return;
+      }
+
       const { data } = await supabase
         .from("quizzes")
         .select("*")
@@ -47,7 +66,7 @@ export default function QuizPage() {
       setLoading(false);
     }
     loadQuiz();
-  }, [id, supabase]);
+  }, [id, supabase, router]);
 
   const handleAnswer = (index: number) => {
     if (showResult) return;
