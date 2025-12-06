@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/transcribe/route";
 
 // Mock fetch globally
@@ -12,7 +12,7 @@ const mockSupabaseInsert = vi.fn();
 
 vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(() => ({
-    from: vi.fn((table: string) => ({
+    from: vi.fn(() => ({
       update: mockSupabaseUpdate,
       select: mockSupabaseSelect,
       insert: mockSupabaseInsert,

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
 import { POST } from "@/app/api/stripe/webhook/route";
-import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import type Stripe from "stripe";
 
 // Mock Stripe
 vi.mock("@/lib/stripe/server", () => ({
@@ -28,7 +27,7 @@ const mockSupabaseSelect = vi.fn().mockReturnValue({
 
 vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(() => ({
-    from: vi.fn((table: string) => ({
+    from: vi.fn(() => ({
       update: mockSupabaseUpdate,
       select: mockSupabaseSelect,
     })),

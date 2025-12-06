@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextResponse, NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 
 // Mock Supabase SSR
 const mockGetUser = vi.fn();
 
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: vi.fn((_url, _key, options) => {
+  createServerClient: vi.fn(() => {
     return {
       auth: {
         getUser: mockGetUser,
