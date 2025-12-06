@@ -4,7 +4,6 @@ import { FileAudio, BookOpen } from "lucide-react";
 
 export default async function LearnPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
   const { data: materials } = await supabase
     .from("materials")
