@@ -52,6 +52,26 @@ export default async function DashboardPage() {
     ? `${Math.round(totalSeconds / 60)}min`
     : `${totalHours.toFixed(1)}h`;
 
+  // Calculate weekly progress
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoISO = weekAgo.toISOString();
+
+  const { count: quizzesThisWeek } = await supabase
+    .from("quiz_attempts")
+    .select("*", { count: "exact", head: true })
+    .eq("student_id", user!.id)
+    .gte("completed_at", weekAgoISO);
+
+  const { count: materialsThisWeek } = await supabase
+    .from("materials")
+    .select("*", { count: "exact", head: true })
+    .gte("created_at", weekAgoISO);
+
+  const weeklyGoal = 5; // cel: 5 aktywności tygodniowo
+  const weeklyActivities = (quizzesThisWeek || 0) + (materialsThisWeek || 0);
+  const weeklyProgress = Math.min(100, Math.round((weeklyActivities / weeklyGoal) * 100));
+
   const stats = [
     {
       label: "Materiały",
@@ -76,7 +96,7 @@ export default async function DashboardPage() {
     },
     {
       label: "Postęp tygodnia",
-      value: "0%",
+      value: `${weeklyProgress}%`,
       icon: TrendingUp,
       color: "text-orange-500",
       bg: "bg-orange-500/10",
