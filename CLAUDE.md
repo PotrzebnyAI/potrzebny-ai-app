@@ -1,222 +1,509 @@
-# CLAUDE.md - AI Assistant Guide for potrzebny.ai
+# CLAUDE.md - Przewodnik dla Asystentów AI
 
-## Project Overview
+## Przegląd Projektu
 
-**potrzebny.ai** is a full-stack AI-powered learning platform that automatically generates study materials (notes, quizzes, flashcards) from audio lectures. It targets Polish education, health, and research sectors with accessibility-first design supporting multiple learning modes (ADHD, dyslexia, visual, auditory learners).
+**potrzebny.ai** to pełnostackowa platforma edukacyjna wykorzystująca AI do automatycznego generowania materiałów do nauki (notatki, quizy, fiszki) z nagrań audio wykładów. Projekt jest skierowany do polskiego sektora edukacji, zdrowia i badań, z naciskiem na dostępność i wsparcie różnych stylów uczenia się (ADHD, dysleksja, wzrokowcy, słuchowcy).
 
-## Technology Stack
+### Kluczowe Funkcjonalności
+- Transkrypcja audio w języku polskim (OpenAI Whisper)
+- Generowanie notatek dostosowanych do stylu uczenia się
+- Automatyczne tworzenie quizów i fiszek
+- System subskrypcji z płatnościami Stripe
+- Integracja z Google Drive (plan Team)
 
-| Layer | Technology | Version |
-|-------|------------|---------|
+## Stos Technologiczny
+
+| Warstwa | Technologia | Wersja |
+|---------|-------------|--------|
 | Framework | Next.js (App Router) | 15.0 |
 | Frontend | React | 19.0 |
-| Language | TypeScript | 5.6 |
-| Styling | Tailwind CSS | 4.0 |
-| Database | Supabase (PostgreSQL) | - |
-| Auth | Supabase Auth (SSR) | 0.5.0 |
+| Język | TypeScript | 5.6 |
+| Stylowanie | Tailwind CSS | 4.0 |
+| Baza danych | Supabase (PostgreSQL) | - |
+| Autoryzacja | Supabase Auth (SSR) | 0.5.0 |
 | AI | OpenAI (Whisper, GPT-4o-mini) | - |
-| Payments | Stripe | 16.12 |
-| Icons | Lucide React | 0.460 |
+| Płatności | Stripe | 16.12 |
+| Ikony | Lucide React | 0.460 |
 
-## Quick Commands
+## Szybkie Komendy
 
 ```bash
-npm run dev      # Start development server on localhost:3000
-npm run build    # Create production build
-npm run start    # Run production server
-npm run lint     # Run ESLint
+npm run dev      # Serwer developerski na localhost:3000
+npm run build    # Build produkcyjny
+npm run start    # Uruchom serwer produkcyjny
+npm run lint     # Sprawdź kod ESLint
 ```
 
-## Project Structure
+## Struktura Projektu
 
 ```
 /src
 ├── /app                     # Next.js App Router
-│   ├── /api                 # API routes
-│   │   ├── /stripe          # Payment endpoints (checkout, portal, webhook)
-│   │   └── /transcribe      # Audio processing & AI content generation
-│   ├── /auth                # Auth pages (login, register, callback)
-│   ├── /dashboard           # Protected routes
-│   │   ├── /materials       # Audio upload & management
-│   │   ├── /learn           # Study materials browser
-│   │   │   └── /[id]        # Material detail (notes, quiz, flashcards)
-│   │   └── /settings        # User preferences
+│   ├── /api                 # Endpointy API
+│   │   ├── /stripe          # Płatności (checkout, portal, webhook)
+│   │   │   ├── /checkout    # POST - tworzenie sesji płatności
+│   │   │   ├── /portal      # GET - portal zarządzania subskrypcją
+│   │   │   └── /webhook     # POST - obsługa zdarzeń Stripe
+│   │   └── /transcribe      # POST - przetwarzanie audio i generowanie AI
+│   ├── /auth                # Strony autoryzacji
+│   │   ├── /login           # Logowanie
+│   │   ├── /register        # Rejestracja
+│   │   └── /callback        # OAuth callback (Google)
+│   ├── /dashboard           # Chronione trasy
+│   │   ├── /materials       # Upload i zarządzanie nagraniami
+│   │   │   └── /[id]        # Szczegóły materiału
+│   │   ├── /learn           # Przeglądarka materiałów
+│   │   │   └── /[id]        # Widok nauki
+│   │   │       ├── /notes       # Notatki
+│   │   │       ├── /quiz        # Quiz
+│   │   │       └── /flashcards  # Fiszki
+│   │   └── /settings        # Ustawienia użytkownika
 │   ├── page.tsx             # Landing page
 │   ├── layout.tsx           # Root layout
-│   └── globals.css          # Global styles & CSS variables
+│   └── globals.css          # Style globalne i zmienne CSS
 │
-├── /components              # React components
-│   ├── /landing             # Landing page sections
-│   ├── /dashboard           # Dashboard components
-│   └── /ui                  # Reusable UI components
+├── /components              # Komponenty React
+│   ├── /landing             # Sekcje landing page
+│   │   ├── Header.tsx       # Nawigacja główna
+│   │   ├── Hero.tsx         # Sekcja hero
+│   │   ├── TabsSection.tsx  # Zakładki z funkcjami
+│   │   ├── Pricing.tsx      # Cennik
+│   │   └── Footer.tsx       # Stopka
+│   ├── /dashboard           # Komponenty dashboardu
+│   │   └── DashboardNav.tsx # Nawigacja boczna
+│   └── /ui                  # Komponenty UI
+│       └── button.tsx       # Przycisk (warianty)
 │
-├── /lib                     # Utilities & configurations
-│   ├── /supabase            # Supabase clients (server.ts, client.ts, middleware.ts)
-│   ├── /stripe              # Stripe config (server.ts, client.ts, config.ts)
-│   └── utils.ts             # Utility functions (cn for class merging)
+├── /lib                     # Biblioteki i konfiguracje
+│   ├── /supabase            # Klienty Supabase
+│   │   ├── server.ts        # Klient serwerowy (SSR)
+│   │   ├── client.ts        # Klient przeglądarkowy
+│   │   └── middleware.ts    # Helper dla middleware
+│   ├── /stripe              # Integracja Stripe
+│   │   ├── server.ts        # Instancja Stripe
+│   │   ├── client.ts        # Loader Stripe.js
+│   │   └── config.ts        # Konfiguracja planów
+│   └── utils.ts             # Funkcje pomocnicze (cn)
 │
-├── /types                   # TypeScript definitions
-│   └── database.ts          # Supabase schema types
+├── /types                   # Definicje TypeScript
+│   └── database.ts          # Typy schematu Supabase
 │
-└── middleware.ts            # Auth middleware (route protection)
+└── middleware.ts            # Middleware autoryzacji
 
 /supabase
-└── /migrations              # Database migrations
+└── /migrations              # Migracje bazy danych
 ```
 
-## Architecture Patterns
+## Tryby Uczenia Się (Learning Modes)
 
-### Authentication Flow
-1. Middleware intercepts all requests (`/src/middleware.ts`)
-2. Supabase SSR handles session via cookies
-3. Protected routes (`/dashboard/*`) redirect to `/auth/login` if unauthenticated
-4. Auth pages redirect to `/dashboard` if already logged in
-5. OAuth callback handled at `/auth/callback`
+Aplikacja wspiera 5 trybów uczenia się, które wpływają na sposób generowania notatek:
 
-### API Route Pattern
-- Server-side Supabase client: `createClient()` from `/lib/supabase/server.ts`
-- Always check authentication before processing
-- Return proper HTTP status codes with JSON responses
+| Tryb | Opis | Styl Notatek |
+|------|------|--------------|
+| `standard` | Domyślny tryb | Strukturyzowane notatki z sekcjami |
+| `adhd` | Dla osób z ADHD | Krótkie sekcje, bullet pointy, emoji |
+| `dyslexia` | Dla osób z dysleksją | Prosty język, krótkie zdania, duże odstępy |
+| `visual` | Dla wzrokowców | Diagramy ASCII, tabele, wizualizacje |
+| `auditory` | Dla słuchowców | Forma dialogu, opowieści, mnemotechniki |
 
-### Component Organization
-- **Landing components**: `/components/landing/` - Marketing site sections
-- **Dashboard components**: `/components/dashboard/` - App UI
-- **UI primitives**: `/components/ui/` - Reusable building blocks
+### Przykład Promptów dla Trybów
 
-## Database Schema
-
-### Core Tables
-| Table | Purpose |
-|-------|---------|
-| `profiles` | User accounts, subscription tier, learning mode |
-| `materials` | Audio files (status: pending/processing/completed/failed) |
-| `transcriptions` | Text transcripts from audio |
-| `notes` | AI-generated study notes |
-| `quizzes` | Quiz questions with answers |
-| `quiz_attempts` | User quiz history |
-| `flashcard_decks` | Flashcard sets |
-| `flashcard_progress` | Spaced repetition tracking |
-
-### Key Enums
-- **LearningMode**: `standard`, `adhd`, `dyslexia`, `visual`, `auditory`
-- **SubscriptionTier**: `free`, `starter`, `pro`, `team`
-- **MaterialStatus**: `pending`, `processing`, `completed`, `failed`
-- **UserRole**: `student`, `teacher`, `admin`
-
-## Environment Variables
-
-Required environment variables (create `.env.local`):
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-OPENAI_API_KEY=
-STRIPE_SECRET_KEY=
-STRIPE_STARTER_PRICE_ID=
-STRIPE_PRO_PRICE_ID=
-STRIPE_TEAM_PRICE_ID=
-STRIPE_WEBHOOK_SECRET=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+```typescript
+const modePrompts: Record<string, string> = {
+  standard: "Stwórz strukturyzowane notatki z podanej transkrypcji wykładu.",
+  adhd: "Stwórz krótkie, zwięzłe notatki z podziałem na małe sekcje. Używaj bullet pointów i emoji dla lepszej koncentracji.",
+  dyslexia: "Stwórz notatki używając prostego języka, krótkich zdań i dużych odstępów między sekcjami.",
+  visual: "Stwórz notatki z diagramami ASCII, tabelami i wizualnymi reprezentacjami pojęć.",
+  auditory: "Stwórz notatki w formie dialogu i opowieści, z mnemotechnikami.",
+};
 ```
 
-## Code Conventions
+## Plany Subskrypcji
+
+| Plan | Cena | Transkrypcja | Tryby Uczenia | Kluczowe Funkcje |
+|------|------|--------------|---------------|------------------|
+| **Starter** | 29 PLN/mies. | 5 godzin | 1 | Notatki AI, Quizy |
+| **Pro** | 49 PLN/mies. | 20 godzin | 5 | + Fiszki, Google Drive |
+| **Team** | 79 PLN/mies. | Bez limitu | 5 | + Panel nauczyciela, API |
+
+## Schemat Bazy Danych
+
+### Główne Tabele
+
+```
+profiles          - Konta użytkowników, subskrypcje, preferencje
+├── id            (UUID, PK)
+├── email         (string)
+├── role          (student/teacher/admin)
+├── learning_mode (standard/adhd/dyslexia/visual/auditory)
+├── subscription_tier   (free/starter/pro/team)
+└── stripe_customer_id  (string, nullable)
+
+materials         - Pliki audio
+├── id            (UUID, PK)
+├── teacher_id    (UUID, FK -> profiles)
+├── title         (string)
+├── audio_url     (string, Supabase Storage)
+├── status        (pending/processing/completed/failed)
+└── course_id     (UUID, FK -> courses, nullable)
+
+transcriptions    - Transkrypcje z Whisper
+├── material_id   (UUID, FK -> materials)
+├── content       (text)
+├── language      (string, default: "pl")
+└── word_count    (integer)
+
+notes             - Notatki AI
+├── material_id   (UUID, FK -> materials)
+├── learning_mode (enum)
+└── content       (JSON - title, summary, sections, keyPoints)
+
+quizzes           - Quizy
+├── material_id   (UUID, FK -> materials)
+├── title         (string)
+└── questions     (JSON - question, options, correctAnswer, explanation)
+
+flashcard_decks   - Zestawy fiszek
+├── material_id   (UUID, FK -> materials)
+├── title         (string)
+└── cards         (JSON - front, back)
+```
+
+### Struktury JSON
+
+**Notatki (`notes.content`):**
+```json
+{
+  "title": "Tytuł notatek",
+  "summary": "Krótkie podsumowanie",
+  "sections": [
+    { "title": "Sekcja 1", "content": "Treść..." }
+  ],
+  "keyPoints": ["Punkt 1", "Punkt 2"]
+}
+```
+
+**Quiz (`quizzes.questions`):**
+```json
+[
+  {
+    "question": "Pytanie?",
+    "options": ["A", "B", "C", "D"],
+    "correctAnswer": 0,
+    "explanation": "Wyjaśnienie..."
+  }
+]
+```
+
+**Fiszki (`flashcard_decks.cards`):**
+```json
+[
+  { "front": "Pojęcie", "back": "Definicja" }
+]
+```
+
+## Przepływy Pracy
+
+### Pipeline Przetwarzania Audio
+
+```
+1. Upload pliku audio (MP3, WAV, M4A, OGG)
+   └─> POST /api/transcribe { materialId }
+       │
+2. Zapisanie w Supabase Storage (bucket: audio)
+       │
+3. Status materiału: "processing"
+       │
+4. OpenAI Whisper API (język: pl)
+   └─> Transkrypcja zapisana w tabeli transcriptions
+       │
+5. GPT-4o-mini (równoległe wywołania)
+   ├─> generateNotes() -> tabela notes
+   ├─> generateQuiz()  -> tabela quizzes
+   └─> generateFlashcards() -> tabela flashcard_decks
+       │
+6. Status materiału: "completed"
+```
+
+### Przepływ Autoryzacji
+
+```
+Request
+   │
+   └─> middleware.ts (sprawdzenie sesji)
+       ├─> /dashboard/* → wymaga zalogowania
+       │   └─> Brak sesji → redirect /auth/login
+       │
+       └─> /auth/* → wymaga wylogowania
+           └─> Jest sesja → redirect /dashboard
+```
+
+### Przepływ Płatności Stripe
+
+```
+1. Użytkownik wybiera plan
+   └─> POST /api/stripe/checkout { priceId }
+       │
+2. Stripe Checkout Session
+   └─> Redirect do strony płatności Stripe
+       │
+3. Płatność zakończona
+   └─> Webhook: checkout.session.completed
+       └─> Aktualizacja profiles.subscription_tier
+           │
+4. Zarządzanie subskrypcją
+   └─> GET /api/stripe/portal
+       └─> Redirect do Customer Portal
+```
+
+## Konwencje Kodu
 
 ### TypeScript
-- Strict mode enabled
-- Path alias: `@/*` maps to `./src/*`
-- All database types in `/src/types/database.ts`
-- Use type inference where possible, explicit types for function params
+- Strict mode włączony
+- Path alias: `@/*` mapuje do `./src/*`
+- Wszystkie typy bazy w `/src/types/database.ts`
+- Używaj type inference gdzie możliwe
 
-### Styling
-- Use Tailwind CSS utility classes
-- CSS variables defined in `globals.css` for theming
-- Use `cn()` utility from `/lib/utils.ts` for conditional classes
-- Support light/dark mode via `prefers-color-scheme`
+### Użycie Typów
 
-### File Naming
-- Components: PascalCase (`DashboardNav.tsx`)
-- Utilities: camelCase (`utils.ts`)
-- Pages/Routes: lowercase with hyphens (Next.js convention)
+```typescript
+import type { Database, LearningMode, MaterialStatus } from '@/types/database';
+
+// Typ wiersza tabeli
+type Profile = Database['public']['Tables']['profiles']['Row'];
+type Material = Database['public']['Tables']['materials']['Row'];
+
+// Użycie enumów
+const mode: LearningMode = 'adhd';
+const status: MaterialStatus = 'processing';
+```
+
+### Stylowanie (Tailwind CSS)
+- Używaj klas utility Tailwind
+- Zmienne CSS w `globals.css` dla motywów
+- Używaj `cn()` z `/lib/utils.ts` dla warunkowych klas
+- Wsparcie light/dark mode przez `prefers-color-scheme`
+
+```typescript
+import { cn } from '@/lib/utils';
+
+// Przykład użycia cn()
+<button className={cn(
+  "px-4 py-2 rounded",
+  isActive && "bg-indigo-600 text-white",
+  disabled && "opacity-50 cursor-not-allowed"
+)}>
+```
 
 ### API Routes
-- Use `NextRequest` and `NextResponse` from `next/server`
-- Always validate user authentication first
-- Return JSON with appropriate status codes
-- Handle errors gracefully with try/catch
 
-## Key Workflows
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
-### Audio Processing Pipeline
-1. User uploads audio file (MP3, WAV, M4A, OGG)
-2. File stored in Supabase Storage (`audio` bucket)
-3. Material status set to `processing`
-4. OpenAI Whisper transcribes audio (Polish language)
-5. GPT-4o-mini generates notes, quizzes, flashcards in parallel
-6. Content adapted to user's learning mode
-7. Status updated to `completed`
+export async function POST(request: NextRequest) {
+  try {
+    // 1. Sprawdź autoryzację
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-### Subscription Flow
-- Three tiers: Starter (29 PLN), Pro (49 PLN), Team (79 PLN)
-- Stripe Checkout for payment
-- Webhooks update `profiles.subscription_tier` and `subscription_status`
-- Customer portal for subscription management
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Nieautoryzowany' },
+        { status: 401 }
+      );
+    }
 
-## Common Tasks
+    // 2. Przetwórz request
+    const body = await request.json();
 
-### Adding a New API Route
-1. Create folder in `/src/app/api/[route-name]/`
-2. Add `route.ts` with HTTP method handlers
-3. Use `createClient()` for authenticated Supabase access
-4. Follow existing patterns in `/api/transcribe` or `/api/stripe`
+    // 3. Logika biznesowa...
 
-### Adding a New Dashboard Page
-1. Create folder in `/src/app/dashboard/[page-name]/`
-2. Add `page.tsx` (automatically protected by middleware)
-3. Use server components for data fetching
-4. Add navigation link in `DashboardNav.tsx`
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Błąd serwera' },
+      { status: 500 }
+    );
+  }
+}
+```
 
-### Adding a New Component
-1. Create in appropriate folder (`/components/ui/`, `/components/dashboard/`, etc.)
-2. Use TypeScript interfaces for props
-3. Export as default or named export consistently
-4. Use `cn()` for conditional styling
+### Nazewnictwo Plików
+- Komponenty: PascalCase (`DashboardNav.tsx`)
+- Utilities: camelCase (`utils.ts`)
+- Strony/Routes: lowercase (konwencja Next.js)
 
-## Important Notes
+## Typowe Zadania
 
-### Language
-- UI text is in **Polish** (pl)
-- OpenAI prompts specify Polish language output
-- Keep all user-facing text in Polish
+### Dodanie Nowej Strony Dashboard
 
-### Security
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` to client
-- Validate all user input
-- Use Row Level Security (RLS) in Supabase
-- Webhook signatures must be verified
+```bash
+# 1. Utwórz folder
+mkdir -p src/app/dashboard/nowa-strona
 
-### Performance
-- Use React Server Components where possible
-- Lazy load heavy components
-- Optimize images with Next.js Image component
-- Supabase domain allowlisted in `next.config.ts`
+# 2. Utwórz page.tsx
+```
 
-## Debugging Tips
+```typescript
+// src/app/dashboard/nowa-strona/page.tsx
+import { createClient } from '@/lib/supabase/server';
 
-- Check browser console for client-side errors
-- Check terminal for server-side errors
-- Supabase dashboard for database/auth issues
-- Stripe dashboard for payment issues
-- OpenAI dashboard for API usage/errors
+export default async function NowaStronaPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-## File References
+  // Pobierz dane...
 
-| Purpose | File Path |
-|---------|-----------|
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold">Nowa Strona</h1>
+      {/* Zawartość */}
+    </div>
+  );
+}
+```
+
+```typescript
+// 3. Dodaj link w DashboardNav.tsx
+{ name: 'Nowa Strona', href: '/dashboard/nowa-strona', icon: Icon }
+```
+
+### Dodanie Nowego API Endpoint
+
+```typescript
+// src/app/api/nowy-endpoint/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+
+export async function GET(request: NextRequest) {
+  const supabase = await createClient();
+  // ...
+}
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  // ...
+}
+```
+
+### Dodanie Nowego Komponentu UI
+
+```typescript
+// src/components/ui/card.tsx
+import { cn } from '@/lib/utils';
+
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function Card({ children, className }: CardProps) {
+  return (
+    <div className={cn(
+      "bg-white rounded-lg shadow-md p-6",
+      "dark:bg-gray-800",
+      className
+    )}>
+      {children}
+    </div>
+  );
+}
+```
+
+## Zmienne Środowiskowe
+
+Utwórz plik `.env.local`:
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...  # TYLKO server-side!
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+
+# Stripe
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_STARTER_PRICE_ID=price_...
+STRIPE_PRO_PRICE_ID=price_...
+STRIPE_TEAM_PRICE_ID=price_...
+```
+
+## Ważne Uwagi
+
+### Język
+- Cały UI jest w **języku polskim**
+- Prompty OpenAI generują treści po polsku
+- Wszystkie komunikaty błędów po polsku
+- Transkrypcja Whisper: `language: "pl"`
+
+### Bezpieczeństwo
+- **NIGDY** nie eksponuj `SUPABASE_SERVICE_ROLE_KEY` do klienta
+- Waliduj wszystkie dane wejściowe
+- Używaj Row Level Security (RLS) w Supabase
+- Weryfikuj sygnatury webhooków Stripe
+- Sprawdzaj autoryzację w każdym API route
+
+### Wydajność
+- Używaj React Server Components gdzie możliwe
+- Lazy load ciężkich komponentów
+- Optymalizuj obrazy przez Next.js Image
+- Domena Supabase w allowlist (`next.config.ts`)
+- Równoległe wywołania AI w pipeline
+
+## Debugowanie
+
+| Problem | Gdzie szukać |
+|---------|--------------|
+| Błędy client-side | Konsola przeglądarki (DevTools) |
+| Błędy server-side | Terminal (npm run dev) |
+| Problemy z auth | Supabase Dashboard → Authentication |
+| Problemy z bazą | Supabase Dashboard → Table Editor |
+| Błędy płatności | Stripe Dashboard → Logs/Events |
+| Błędy AI | OpenAI Dashboard → Usage |
+
+### Typowe Błędy
+
+```bash
+# "Unauthorized" w API
+→ Sprawdź czy middleware.ts przepuszcza trasę
+→ Sprawdź czy sesja jest prawidłowa
+
+# "Transcription failed"
+→ Sprawdź format audio (MP3, WAV, M4A, OGG)
+→ Sprawdź OPENAI_API_KEY
+→ Sprawdź limity API OpenAI
+
+# Webhook nie działa
+→ Sprawdź STRIPE_WEBHOOK_SECRET
+→ W dev użyj: stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
+## Referencje Plików
+
+| Cel | Ścieżka |
+|-----|---------|
 | Root layout | `/src/app/layout.tsx` |
-| Auth middleware | `/src/middleware.ts` |
-| Supabase server client | `/src/lib/supabase/server.ts` |
-| Supabase browser client | `/src/lib/supabase/client.ts` |
-| Stripe config | `/src/lib/stripe/config.ts` |
-| Database types | `/src/types/database.ts` |
-| Global styles | `/src/app/globals.css` |
-| Button component | `/src/components/ui/button.tsx` |
+| Middleware auth | `/src/middleware.ts` |
+| Typy bazy danych | `/src/types/database.ts` |
+| Klient Supabase (server) | `/src/lib/supabase/server.ts` |
+| Klient Supabase (browser) | `/src/lib/supabase/client.ts` |
+| Konfiguracja Stripe | `/src/lib/stripe/config.ts` |
+| Pipeline transkrypcji | `/src/app/api/transcribe/route.ts` |
+| Webhook Stripe | `/src/app/api/stripe/webhook/route.ts` |
+| Style globalne | `/src/app/globals.css` |
+| Komponent Button | `/src/components/ui/button.tsx` |
+| Nawigacja dashboard | `/src/components/dashboard/DashboardNav.tsx` |
+
+## Rozwój Projektu - Planowane Funkcje
+
+- [ ] Eksport notatek do PDF
+- [ ] Integracja z Google Drive
+- [ ] Panel nauczyciela (tworzenie kursów)
+- [ ] Analityka postępów ucznia
+- [ ] API publiczne (plan Team)
+- [ ] Aplikacja mobilna (React Native)
