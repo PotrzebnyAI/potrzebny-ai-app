@@ -5,10 +5,12 @@ import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
 // Use service role for webhook (no user context)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -79,7 +81,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     team: "team",
   };
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("profiles")
     .update({
       stripe_customer_id: customerId,
@@ -107,7 +109,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     team: "team",
   };
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("profiles")
     .update({
       subscription_status: statusMap[subscription.status] || "inactive",
@@ -119,7 +121,7 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const userId = subscription.metadata.supabase_user_id;
 
-  await supabaseAdmin
+  await getSupabaseAdmin()
     .from("profiles")
     .update({
       subscription_status: "canceled",
@@ -131,6 +133,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
   const customerId = invoice.customer as string;
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data: profile } = await supabaseAdmin
     .from("profiles")
